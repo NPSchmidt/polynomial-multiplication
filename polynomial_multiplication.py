@@ -3,7 +3,6 @@ import cmath
 import random
 import timeit
 
-
 try:
     _ = list[int]
     List = list
@@ -25,15 +24,21 @@ def prod_fft(a: List[int], b: List[int]) -> List[int]:
         n = len(a)
         if n == 1:
             return a
+        # Coefficients with even indices
         a_g = a[::2]
+        # Coefficients with odd indices
         a_u = a[1::2]
+        # Evaluate recursively
         y_g = evaluate_fft(a_g)
         y_u = evaluate_fft(a_u)
+        # Calculate principal root of unity
         omega = cmath.exp(complex(imag=2*cmath.pi/n))
         omega_current = 1
+        # Create result vector of length n
         y = [0] * n
         n_half = n // 2
         for k in range(n_half):
+            # Fill result vector
             y[k] = y_g[k] + omega_current * y_u[k]
             y[n_half + k] = y_g[k] - omega_current * y_u[k]
             omega_current *= omega
@@ -45,13 +50,18 @@ def prod_fft(a: List[int], b: List[int]) -> List[int]:
             return y
         y_g = y[::2]
         y_u = y[1::2]
+        # Coefficients with even indices
         a_g = interpolate_ifft(y_g)
+        # Coefficients with odd indices
         a_u = interpolate_ifft(y_u)
+        # Calculate inverse of principal root of unity
         omega = cmath.exp(complex(imag=-2*cmath.pi/n))
         omega_current = 1
+        # Create result vector of length n
         a = [0] * n
         n_half = n // 2
         for k in range(n_half):
+            # Fill result vector
             a[k] = a_g[k] + omega_current * a_u[k]
             a[n_half + k] = a_g[k] - omega_current * a_u[k]
             omega_current *= omega
@@ -59,11 +69,16 @@ def prod_fft(a: List[int], b: List[int]) -> List[int]:
 
     n = len(a)
     assert n == len(b)
+    # Double the size of the coefficient representations by filling them up with zeros
+    # and convert them to point-value representations
     y_a = evaluate_fft(a + [0]*n)
     y_b = evaluate_fft(b + [0]*n)
     n *= 2
+    # Pointwise multiplication of the point-value representations
     y_p = [y_a_k * y_b_j for y_a_k, y_b_j in zip(y_a, y_b)]
+    # Convert the point-value representation of the product back to a coefficient representation
     p_times_n = interpolate_ifft(y_p)
+    # Divide every element in p_times_n by n to compute the result p
     return list(map(lambda x: x / n, p_times_n))
 
 
@@ -72,7 +87,6 @@ def generate_coefficients(n):
 
 
 def main(args):
-
     def print_result(impl_name: str, result_list: List[float]):
         print(f'{impl_name}:\n'
               f'Minimum: {min(result_list)} seconds\n'
@@ -87,12 +101,16 @@ def main(args):
 
     print('Start naive implementation:')
     t_naive = timeit.repeat('prod_naive(a, b)', repeat=repeat, number=number,
-                            setup='a = generate_coefficients(n); b = generate_coefficients(n)', globals={**locals(), **globals()})
+                            setup='a = generate_coefficients(n); b = generate_coefficients(n)',
+                            # Pass all locals and globals so all used functions are visible
+                            globals={**locals(), **globals()})
     print_result('Naive implementation', t_naive)
 
     print('Start FFT:')
     t_fft = timeit.repeat('prod_fft(a,b)', repeat=repeat, number=number,
-                          setup='a = generate_coefficients(n); b = generate_coefficients(n)', globals={**locals(), **globals()})
+                          setup='a = generate_coefficients(n); b = generate_coefficients(n)',
+                          # Pass all locals and globals so all used functions are visible
+                          globals={**locals(), **globals()})
     print_result('FFT implementation', t_fft)
 
 
